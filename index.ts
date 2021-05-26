@@ -36,7 +36,14 @@ client.on('message', message => {
     if (message.author.bot) return
     if (!message.member) return
     if (!message.content.startsWith(config.prefix)) return
-    switch (message.content.substring(config.prefix.length,message.content.indexOf(" "))) {
+    let endIndex = 0
+    if (message.content.includes(" ")) {
+        endIndex = message.content.indexOf(" ")
+    }
+    else {
+        endIndex = message.content.length
+    }
+    switch (message.content.substring(config.prefix.length, endIndex)) {
         case 'ping':
             message.reply("Pong!")
         return
