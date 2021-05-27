@@ -106,6 +106,19 @@ function ghostLogin(xSlgUser: string, xSlgSession: string, minehutSessionId: str
     })
 }
 
+export async function getFile(serverId: string, path: string) {
+    return new Promise<string>((resolve, reject) => {
+        fetchAuthorized("/file/" + serverId + '/read/' + path).then(file => {
+            if (file.content) {
+                resolve(file.content)
+            }
+            else {
+                reject(file)
+            }
+        })
+    })
+}
+
 async function fetchAuthorized(endpoint: string, headers?: Headers, method?: string, body?: {}) {
     return new Promise<any>((resolve, reject) => {
         if (!loggedIn) {reject("You are not logged in."); return}
@@ -130,7 +143,8 @@ async function fetchAuthorized(endpoint: string, headers?: Headers, method?: str
             options.body = JSON.stringify(body)
         }
     
-        fetch(apiURL + endpoint, options).then(res => res.json().then(res => {
+        fetch(apiURL + endpoint, options).then(res => 
+            res.json().then(res => {
             resolve(res)
         }))
     })
@@ -274,6 +288,27 @@ class OwnedServer {
     start() {
         return activateServer(this)
     }
+
+    sendCommand(command: string) {
+        return sendCommand(this.id, command)
+    }
+
+    getFile(path: string) {
+        return getFile(this.id, path)
+    }
+}
+
+export async function sendCommand(serverId: string, command: string) {
+    return new Promise<void>((resolve, reject) => {
+        fetchAuthorized('/server/' + serverId + '/send_command', undefined, 'POST', {command: command}).then(res => {
+            if (JSON.stringify(res) === "{}") {
+                resolve()
+            }
+            else {
+                reject(res)
+            }
+        })
+    })
 }
 
 async function startService(server: string) {
