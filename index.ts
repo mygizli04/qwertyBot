@@ -25,6 +25,11 @@ else {
 }
 
 import * as discord from 'discord.js'
+import minehut = require('./minehut.js')
+
+minehut.login().then(() => {
+    minehut.fetchServer("qwerty80")
+})
 
 const client = new discord.Client()
 
@@ -47,7 +52,40 @@ client.on('message', message => {
         case 'ping':
             message.reply("Pong!")
         return
-
+        case 'status':
+            minehut.fetchServer("qwerty80").then(server => {
+                if (server.online) {
+                    switch (server.playerCount) {
+                        case 0:
+                            message.channel.send("The server is online with no one playing! Why not be the first to join?")
+                        break
+                        case 1:
+                            message.channel.send("The server is online with one person playing! They must be so alone :(")
+                        break
+                        default:
+                            message.channel.send("The server is online with " + server.playerCount + " people playing!")
+                    }
+                }
+                else if (server.serviceOnline) {
+                    switch (server.status) {
+                        case 'STARTING':
+                            message.channel.send("The server is starting...")
+                        break
+                        case 'STOPPING':
+                            message.channel.send("The server is stopping...")
+                        break
+                        case 'OFFLINE':
+                            message.channel.send("The server is offline (Not hibernating)")
+                        break
+                        default:
+                            message.channel.send("The server is currently not online. (Not hibernating)")
+                    }
+                }
+                else {
+                    message.channel.send("The server is hibernating.")
+                }
+            })
+        return
     }
 })
 
