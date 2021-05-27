@@ -86,6 +86,18 @@ client.on('message', message => {
                 }
             })
         return
+        case 'start':
+            message.channel.send("Starting the server, please wait..")
+            minehut.activateServer("qwerty80").then(() => {
+                message.channel.send("The server is now starting..")
+            }).catch(err => {
+                if (err === "The server is already online!") {
+                    message.channel.send("The server failed to start because it's already online!")
+                } else {
+                    throw "The server is already online!"
+                }
+            })
+        return
     }
 })
 

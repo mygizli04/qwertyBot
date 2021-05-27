@@ -270,6 +270,54 @@ class OwnedServer {
         this.timeNoPlayers = server.time_no_players
         this.visiblity = server.visibility
     }
+
+    start() {
+        return activateServer(this)
+    }
+}
+
+async function startService(server: string) {
+    return new Promise<void>((resolve, reject) => {
+        fetchAuthorized('/server/' + server + '/start_service', undefined, 'POST').then(res => {
+            if (JSON.stringify(res) === "{}") {
+                resolve()
+            }
+            else {
+                reject(res)
+            }
+        })
+    })
+}
+
+async function startServer(server: string) {
+    return new Promise<void>((resolve, reject) => {
+        fetchAuthorized('/server/' + server + '/start', undefined, 'POST').then(res => {
+            if (JSON.stringify(res) === "{}") {
+                resolve()
+            }
+            else {
+                reject(res)
+            }
+        })
+    })
+}
+
+export async function activateServer(server: string | OwnedServer) {
+    return new Promise<void>(async (resolve, reject) => {
+        if (typeof server === "string") {
+            server = await fetchServer(server)
+        }
+    
+        if (server.online) {
+            reject("The server is already online!")
+        }
+        else if (server.serviceOnline) {
+            startServer(server.id).then(resolve)
+        }
+        else {
+            startService(server.id).then(resolve)
+        }
+    })
 }
 
 export async function fetchServer(name: string) { 
