@@ -189,6 +189,8 @@ client.on('message', message => {
             minehut.fetchServer("qwerty80").then(server => {
                 server.restart().then(res => {
                     message.channel.send("Successfully restarted!")
+                }).catch(err => {
+                    message.channel.send("Error while restarting server: " + err)
                 })
             })
         return
