@@ -48,7 +48,7 @@ client.on('message', message => {
     else {
         endIndex = message.content.length
     }
-    switch (message.content.substring(config.prefix.length, endIndex)) {
+    switch (message.content.substring(config.prefix.length, endIndex).toLowerCase()) {
         case 'ping':
             message.reply("Pong!")
         return
@@ -133,8 +133,134 @@ client.on('message', message => {
                 })
             })
         return
+        case 'plugins':
+            minehut.fetchServer("qwerty80").then(server => {
+                server.fetchPlugins().then(plugins => {
+                    if (plugins.length === 0) {message.channel.send("You have no plugins!"); return}
+                    let pluginString = "Plugins (" + plugins.length + "): "
+                    plugins.forEach((plugin, index) => {
+                        pluginString += plugin.name
+                        if (index < plugins.length - 1) pluginString += ", "
+                    })
+                    message.channel.send(pluginString)
+                })
+            })
+        return
+        case 'plugininfo':
+            getPluginByName(message.content.substring(message.content.indexOf(" ") + 1)).then(plugin => {
+                const embed = new discord.MessageEmbed().setTitle(plugin.name).setDescription(plugin.extendedDescription).addFields(
+                    {name: "Cost", value: plugin.credits, inline: true},
+                    {name: "Version", value: plugin.version, inline:true}
+                )
+
+                pluginInstallCheck(plugin.id).then(result => {
+                    let installed = "No"
+                    if (result) installed = "Yes"
+                    embed.addField("Installed", installed, true)
+                    message.channel.send(embed)
+                })
+            }).catch(err => {
+                message.channel.send("Error: " + err)
+            })
+        return
+        case 'installplugin':
+            if (!message.member.hasPermission("ADMINISTRATOR")) {message.channel.send("haha, you wish"); return}
+            getPluginByName(message.content.substring(message.content.indexOf(" ") + 1)).then(plugin => {
+                minehut.fetchServer("qwerty80").then(server => {
+                    plugin.install(server).then(() => {
+                        message.channel.send("Installed successfully!\n\n(Don't forget, you have to restart for it to take effect!)")
+                    })
+                })
+            })
+        return
+        case 'uninstallplugin':
+            if (!message.member.hasPermission("ADMINISTRATOR")) {message.channel.send("haha, you wish"); return}
+            getPluginByName(message.content.substring(message.content.indexOf(" ") + 1)).then(plugin => {
+                minehut.fetchServer("qwerty80").then(server => {
+                    plugin.remove(server).then(() => {
+                        message.channel.send("Uninstalled successfully!\n\n(Don't forget, you have to restart for it to take effect!)")
+                    })
+                })
+            })
+        return
+        case 'restart':
+            if (!message.member.hasPermission("ADMINISTRATOR")) {message.channel.send("haha, you wish"); return}
+
+            minehut.fetchServer("qwerty80").then(server => {
+                server.restart().then(res => {
+                    message.channel.send("Successfully restarted!")
+                })
+            })
+        return
     }
 })
+
+async function pluginInstallCheck(id: string) {
+    return new Promise<boolean>((resolve, reject) => {
+        minehut.fetchServer("qwerty80").then(server => {
+            let installed = false
+            server.activePlugins.forEach(plugin => {
+                if (plugin === id) installed = true
+            })
+            resolve(installed)
+        })
+    })
+}
+
+async function getPluginById(id: string) {
+    return new Promise<minehut.Plugin>((resolve, reject) => {
+        minehut.publicPlugins().then(plugins => {
+            let ret: minehut.Plugin | undefined
+
+            plugins.forEach(plugin => {
+                if (plugin.id === id) {
+                    ret = plugin
+                }
+            })
+
+            if (ret) {
+                resolve(ret)
+            }
+            else {
+                reject("Cannot find specified plugin.")
+            }
+        })
+    })
+}
+
+async function getPluginByName(name: string) {
+    return new Promise<minehut.Plugin>((resolve, reject) => {
+        minehut.publicPlugins().then(plugins => {
+            let ret: minehut.Plugin | undefined
+
+            plugins.forEach(plugin => {
+                if (plugin.name.toLowerCase() === name.toLowerCase()) {
+                    ret = plugin
+                }
+            })
+
+            if (ret) {
+                resolve(ret)
+            }
+            else {
+                let closests: Array<minehut.Plugin> = []
+
+                plugins.forEach(plugin => {
+                    if (plugin.name.toLowerCase().startsWith(name.toLowerCase())) {
+                        closests.push(plugin)
+                    }
+                })
+
+                if (closests.length === 1) {
+                    resolve(closests[0])
+                }
+                else {
+                    reject("More than 1 match")
+                }
+            }
+        })
+    })
+}
 
 function rand(min: number, max: number) {
     return Math.round(Math.random() * (max-min) + min)

@@ -296,6 +296,153 @@ class OwnedServer {
     getFile(path: string) {
         return getFile(this.id, path)
     }
+
+    async fetchPlugins() {
+        return new Promise<Array<Plugin>>((resolve, reject) => {
+            let retPlugins: Array<Plugin> = []
+            this.activePlugins.forEach((activePlugin, activeIndex, activeArray) => {
+                publicPlugins().then(plugins => {
+                    plugins.forEach((plugin, pluginIndex, pluginArray) => {
+                       if (plugin.id === activePlugin) {
+                            retPlugins.push(plugin)
+                       }
+
+                       if (retPlugins.length === this.activePlugins.length) {
+                        resolve(retPlugins)
+                       }
+                    })
+                })
+            })
+        })
+    }
+
+    installPlugin(plugin: string | Plugin) {
+        if (typeof plugin === "string") {
+            return installPlugin(this.id, plugin)
+        }
+        else {
+            return installPlugin(this.id, plugin.id)
+        }
+    }
+
+    restart() {
+        return restartServer(this.id)
+    }
+}
+
+export async function restartServer(serverId: string) {
+    return new Promise<void>((resolve, reject) => {
+        fetchAuthorized('/server/' + serverId + '/restart', undefined, 'POST').then(res => {
+            if (JSON.stringify(res) === "{}") {
+                resolve()
+            }
+            else {
+                reject(res)
+            }
+        })
+    })
+}
+
+export function installPlugin(serverId: string, plugin: string) {
+    return new Promise<void>((resolve, reject) => {
+        fetchAuthorized('/server/' + serverId + '/install_plugin', undefined, 'POST', {plugin: plugin}).then((res: {}) => {
+            if (JSON.stringify(res) === "{}") {
+                resolve()
+            }
+            else {
+                reject(res)
+            }
+        })
+    })
+}
+
+export function removePlugin(serverId: string, plugin: string) {
+    return new Promise<void>((resolve, reject) => {
+        fetchAuthorized('/server/' + serverId + '/remove_plugin', undefined, 'POST', {plugin: plugin}).then((res: {}) => {
+            if (JSON.stringify(res) === "{}") {
+                resolve()
+            }
+            else {
+                reject(res)
+            }
+        })
+    })
+}
+
+export class Plugin {
+    id: string
+    configFileName: string
+    created: number
+    credits: number
+    description: string
+    extendedDescription: string
+    disabled: boolean
+    fileName: string
+    htmlDescriptionExtended: string
+    lastUpdated: number
+    name: string
+    platform: string
+    version: string
+    __v: number //No idea what this one does
+
+    constructor (plugin: {
+        _id: string,
+        config_file_name: string,
+        created: number,
+        credits: number,
+        desc: string,
+        desc_extended: string,
+        disabled: boolean,
+        file_name: string,
+        html_desc_extended: string,
+        last_updated: number,
+        name: string,
+        platform: string,
+        version: string,
+        __v: number
+    }) {
+        this.id = plugin._id
+        this.configFileName = plugin.config_file_name
+        this.created = plugin.created
+        this.credits = plugin.credits
+        this.description = plugin.desc
+        this.extendedDescription = plugin.desc_extended
+        this.disabled = plugin.disabled
+        this.fileName = plugin.file_name
+        this.htmlDescriptionExtended = plugin.html_desc_extended
+        this.lastUpdated = plugin.last_updated
+        this.name = plugin.name
+        this.platform = plugin.platform
+        this.version = plugin.version
+        this.__v = plugin.__v
+    }
+
+    install(server: string | OwnedServer) {
+        if (typeof server != 'string') server = server.id
+        return installPlugin(server, this.id)
+    }
+
+    remove(server: string | OwnedServer) {
+        if (typeof server != 'string') server = server.id
+        return removePlugin(server, this.id)
+    }
+}
+
+export async function publicPlugins() {
+    return new Promise<Array<Plugin>>((resolve, reject) => {
+        fetch(apiURL + '/plugins_public').then(res => res.json().then(plugins => {
+            if (plugins.all) {
+                let ret: Array<Plugin> = []
+                plugins.all.forEach((plugin: any) => {
+                    ret.push(new Plugin(plugin))
+                })
+                resolve(ret)
+            }
+            else {
+                reject(plugins)
+            }
+        }))
+    })
 }
 
 export async function sendCommand(serverId: string, command: string) {
