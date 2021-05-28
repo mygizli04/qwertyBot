@@ -27,10 +27,6 @@ else {
 import * as discord from 'discord.js'
 import minehut = require('./minehut.js')
 
-minehut.login().then(() => {
-    minehut.fetchServer("qwerty80")
-})
-
 const client = new discord.Client()
 
 client.on('ready', () => {
@@ -193,7 +189,26 @@ client.on('message', message => {
                     message.channel.send("Error while restarting server: " + err)
                 })
             })
-        return
+       return
+       case 'hibernate':
+            if (!message.member.hasPermission("ADMINISTRATOR")) {message.channel.send("haha, you wish"); return}
+
+            minehut.fetchServer("qwerty80").then(server => {
+
+                if (!server.serviceOnline) {
+                    message.channel.send("The server is already hibernating!")
+                }
+
+                if (server.online) {
+                    message.channel.send("The server is still online! Please stop the server before using this command, or go to the minehut panel in order to force hibernate.")
+                }
+                else {
+                    server.hibernate().then(() => {
+                        message.channel.send("Successfully hibernated the server.")
+                    })
+                }
+            })
+       return
     }
 })
 

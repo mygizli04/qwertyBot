@@ -328,6 +328,23 @@ class OwnedServer {
     restart() {
         return restartServer(this.id)
     }
+
+    hibernate() {
+        return hibernateServer(this.id)
+    }
+}
+
+export async function hibernateServer(serverId: string) {
+    return new Promise<void>((resolve, reject) => {
+        fetchAuthorized('/server/' + serverId + '/destroy_service', undefined, 'POST').then(res => {
+            if (JSON.stringify(res) === "{}") {
+                resolve()
+            }
+            else {
+                reject(res)
+            }
+        })
+    })
 }
 
 export async function restartServer(serverId: string) {
