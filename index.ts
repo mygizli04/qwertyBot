@@ -28,6 +28,7 @@ import * as discord from 'discord.js'
 import minehut = require('./minehut.js')
 
 const client = new discord.Client()
+minehut.login()
 
 client.on('ready', () => {
     console.log("Bot's ready!")
