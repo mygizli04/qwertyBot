@@ -210,6 +210,51 @@ client.on('message', message => {
                 }
             })
        return
+       case 'fulllog':
+            if (!message.member.hasPermission("ADMINISTRATOR")) {message.channel.send("haha, you wish"); return}
+
+            minehut.fetchServer("qwerty80").then(server => {
+
+                if (!server.serviceOnline) {
+                    message.channel.send("Can't get the logs of the server because it's hibernating!")
+                    return
+                }
+
+                server.getFile("/logs/latest.log").then(logs => {
+                    message.channel.send(new discord.MessageAttachment(Buffer.from(logs), "log.txt"))
+                }).catch(err => {
+                    if (err.error) {
+                        message.channel.send("Error getting log file: " + err.error)
+                    }
+                    else {
+                        message.channel.send("Error getting log file: " + err)
+                    }
+                })
+            })
+       return
+       case 'getlog':
+        if (!message.member.hasPermission("ADMINISTRATOR")) {message.channel.send("haha, you wish"); return}
+
+        minehut.fetchServer("qwerty80").then(server => {
+
+            if (!server.serviceOnline) {
+                message.channel.send("Can't get the logs of the server because it's hibernating!")
+                return
+            }
+
+            server.getFile("/logs/latest.log").then(logs => {
+                logs = getLastLines(logs, parseInt(message.content.substring(config.prefix.length + 7)))
+                message.channel.send("```\n" + logs + "\n```")
+            }).catch(err => {
+                if (err.error) {
+                    message.channel.send("Error getting log file: " + err.error)
+                }
+                else {
+                    message.channel.send("Error getting log file: " + err)
+                }
+            })
+        })
+       return
     }
 })
 
