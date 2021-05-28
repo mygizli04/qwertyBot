@@ -224,27 +224,6 @@ async function pluginInstallCheck(id: string) {
     })
 }
 
-async function getPluginById(id: string) {
-    return new Promise<minehut.Plugin>((resolve, reject) => {
-        minehut.publicPlugins().then(plugins => {
-            let ret: minehut.Plugin | undefined
-
-            plugins.forEach(plugin => {
-                if (plugin.id === id) {
-                    ret = plugin
-                }
-            })
-
-            if (ret) {
-                resolve(ret)
-            }
-            else {
-                reject("Cannot find specified plugin.")
-            }
-        })
-    })
-}
-
 async function getPluginByName(name: string) {
     return new Promise<minehut.Plugin>((resolve, reject) => {
         minehut.publicPlugins().then(plugins => {
