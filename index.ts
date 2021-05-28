@@ -14,10 +14,10 @@ import config from './config.json'
 let botToken: string
 
 if (config.storageType === "env") {
-    botToken = process.env.botToken! // deepscan-disable-line UNUSED_VAR_ASSIGN
+    botToken = process.env.botToken!
 }
 else if (config.storageType === "config") {
-    botToken = config.botToken // deepscan-disable-line UNUSED_VAR_ASSIGN
+    botToken = config.botToken
 }
 else {
     console.error("Invalid bot token")
