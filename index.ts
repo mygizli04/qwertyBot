@@ -244,6 +244,7 @@ client.on('message', message => {
 
             server.getFile("/logs/latest.log").then(logs => {
                 logs = getLastLines(logs, parseInt(message.content.substring(config.prefix.length + 7)))
+                logs = logs.replace(new RegExp('(https?://)?(www.)?(discord.(gg|io|me|li)|discordapp.com/invite)/[^\\s/]+?(?=\\b)'), "")
                 message.channel.send("```\n" + logs + "\n```")
             }).catch(err => {
                 if (err.error) {
