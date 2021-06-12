@@ -6,21 +6,14 @@ const loginURL = 'https://authentication-service-prod.superleague.com/v1/user/lo
 const apiURL = 'https://api.minehut.com'
 
 export async function login() {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<any>((resolve, reject) => {
         if (fs.existsSync('./minehut.har')) {
-            parseHar('./minehut.har')
+            parseHar('./minehut.har').then(resolve).catch(reject)
         }
         else {
             reject("No minehut.har detected")
             return
         }
-
-        let interval = setInterval(() => {
-            if (loggedIn) {
-                resolve()
-                clearInterval(interval)
-            }
-        }, 1000)
     })
 }
 
@@ -33,76 +26,85 @@ let loginInfo: {
     servers: Array<string>
 }
 
-function parseHar(fileLocation: string) {
-    let harContent = JSON.parse(fs.readFileSync(fileLocation).toString())
-    let response: {
-        minehutSessionData: {
-            _id: string,
-            order_servers: [],
-            servers: Array<string>,
-            sessionId: string,
-            sessions: Array<{
+async function parseHar(fileLocation: string) {
+    return new Promise((resolve, reject) => {
+        let harContent = JSON.parse(fs.readFileSync(fileLocation).toString())
+        let response: {
+            minehutSessionData: {
+                _id: string,
+                order_servers: [],
+                servers: Array<string>,
                 sessionId: string,
-                created: number
-            }>,
-            slgSessionId: '',
-            slgUserId: '',
-            token: string
-        },
-        slgSessionData: {
-            slgRoles: {
-                minehut: {}
+                sessions: Array<{
+                    sessionId: string,
+                    created: number
+                }>,
+                slgSessionId: '',
+                slgUserId: '',
+                token: string
             },
-            slgSessionId: string,
-            slgUserId: string
+            slgSessionData: {
+                slgRoles: {
+                    minehut: {}
+                },
+                slgSessionId: string,
+                slgUserId: string
+            }
         }
-    }
-
-    harContent.log.entries.forEach((value: { request: { url: string; method: string; }; response: { content: { text: string; }; }; }) => {
-        if (value.request.url == "https://authentication-service-prod.superleague.com/v1/user/login/ghost" && value.request.method == "POST") {
-            try {
-                response = JSON.parse(value.response.content.text)
+    
+        harContent.log.entries.forEach((value: { request: { url: string; method: string; }; response: { content: { text: string; }; }; }) => {
+            if (value.request.url == "https://authentication-service-prod.superleague.com/v1/user/login/ghost" && value.request.method == "POST") {
+                try {
+                    response = JSON.parse(value.response.content.text)
+                }
+                catch (err) {
+                    console.error("The specified file is corrupted.")
+                    return
+                }
             }
-            catch (err) {
-                console.error("The specified file is corrupted.")
-                return
-            }
+        })
+    
+        if (response!) {
+            ghostLogin(response.slgSessionData.slgUserId, response.slgSessionData.slgSessionId, response.minehutSessionData.sessionId, response.slgSessionData.slgSessionId).then(resolve).catch(reject)
+        }
+        else {
+            console.error("Required information could not be found in minehut.har")
         }
     })
-
-    if (response!) {
-        ghostLogin(response.slgSessionData.slgUserId, response.slgSessionData.slgSessionId, response.minehutSessionData.sessionId, response.slgSessionData.slgSessionId)
-    }
-    else {
-        console.error("Required information could not be found in minehut.har")
-    }
 }
 
-function ghostLogin(xSlgUser: string, xSlgSession: string, minehutSessionId: string, slgSessionId: string) {
-    let headers = new Headers()
-    headers.set("x-slg-user", xSlgUser)
-    headers.set('x-slg-session', xSlgSession)
-    headers.set("Content-Type", "application/json")
-
-    fetch(loginURL, {
-        headers: headers,
-        method: 'POST',
-        body: JSON.stringify({
-            minehutSessionId: minehutSessionId,
-            slgSessionId: slgSessionId
+async function ghostLogin(xSlgUser: string, xSlgSession: string, minehutSessionId: string, slgSessionId: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        let headers = new Headers()
+        headers.set("x-slg-user", xSlgUser)
+        headers.set('x-slg-session', xSlgSession)
+        headers.set("Content-Type", "application/json")
+    
+        fetch(loginURL, {
+            headers: headers,
+            method: 'POST',
+            body: JSON.stringify({
+                minehutSessionId: minehutSessionId,
+                slgSessionId: slgSessionId
+            })
+        }).then(res => res.json()).then(res => {
+            if (res.message) {
+                reject(res.message)
+            }
+            else {
+                loginInfo = {
+                    userId: res.minehutSessionData._id,
+                    servers: res.minehutSessionData.servers,
+                    authorization: res.minehutSessionData.token,
+                    xSessionId: res.minehutSessionData.sessionId,
+                    slgSessionId: res.slgSessionData.slgSessionId,
+                    xSlgUser: res.slgSessionData.slgUserId
+                }
+        
+                loggedIn = true
+                resolve()
+            }
         })
-    }).then(res => res.json()).then(res => {
-        loginInfo = {
-            userId: res.minehutSessionData._id,
-            servers: res.minehutSessionData.servers,
-            authorization: res.minehutSessionData.token,
-            xSessionId: res.minehutSessionData.sessionId,
-            slgSessionId: res.slgSessionData.slgSessionId,
-            xSlgUser: res.slgSessionData.slgUserId
-        }
-
-        loggedIn = true
-        console.log("Logged into minehut!")
     })
 }
 

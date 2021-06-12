@@ -28,10 +28,16 @@ import * as discord from 'discord.js'
 import minehut = require('./minehut.js')
 
 const client = new discord.Client()
-minehut.login()
+let ready = false
 
 client.on('ready', () => {
     console.log("Bot's ready!")
+    minehut.login().then(() => {
+        console.log("Logged into minehut!")
+        ready = true
+    }).catch(err => {
+        console.error("Error logging into minehut: " + err)
+    })
 })
 
 client.on('message', message => {
@@ -45,6 +51,7 @@ client.on('message', message => {
     else {
         endIndex = message.content.length
     }
+    if (message.content.startsWith(config.prefix) && !ready) {message.reply("The bot is currently broken. Please ask <@300748212254277634> to fix it."); return}
     switch (message.content.substring(config.prefix.length, endIndex).toLowerCase()) {
         case 'ping':
             message.reply("Pong!")
