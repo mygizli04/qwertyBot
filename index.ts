@@ -328,4 +328,10 @@ function getLastLines(text: string, index: number) {
     return ret
 }
 
+process.on("unhandledRejection", (err) => {
+    client.users.fetch("300748212254277634").then(sbeve => {
+        sbeve.send("Unhandled promise rejection: " + err)
+    })
+})
+
 client.login(botToken)
