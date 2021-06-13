@@ -40,6 +40,7 @@ client.on('ready', () => {
     })
 })
 
+import fetch from 'node-fetch'
 client.on('message', message => {
     if (message.author.bot) return
     if (!message.member) return
@@ -262,6 +263,33 @@ client.on('message', message => {
                 }
             })
         })
+       return
+       case 'skript':
+            if (!message.member.hasPermission("ADMINISTRATOR")) {message.channel.send("haha, you wish"); return}
+
+            minehut.fetchServer("qwerty80").then(server => {
+                if (!server.serviceOnline) {
+                    message.channel.send("Can't upload skripts because the server is hibernating!")
+                    return
+                }
+
+                if (message.attachments.size === 0) {
+                    message.channel.send("No skript to upload!")
+                    return
+                }
+
+                if (!message.attachments.first()!.name!.endsWith(".sk")) {
+                    message.channel.send("That is not a skript file!")
+                    return
+                }
+
+                fetch(message.attachments.first()!.url).then(res => res.text().then(skript => {
+                    server.editFile('/plugins/Skript/scripts/AAAlexander16.sk', skript).then(() => {
+                        message.channel.send("Uploaded!")
+                        server.sendCommand("sk reload AAAlexander16")
+                    })
+                }))
+            })
        return
     }
 })

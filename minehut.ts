@@ -334,6 +334,19 @@ class OwnedServer {
     hibernate() {
         return hibernateServer(this.id)
     }
+
+    async editFile(path: string, content: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            fetchAuthorized('/file/' + this.id + '/edit/' + path, new Headers(), 'POST', {content}).then(res => {
+                if (JSON.stringify(res) === "{}") {
+                    resolve()
+                }
+                else {
+                    reject(res)
+                }
+            })
+        })
+    }
 }
 
 export async function hibernateServer(serverId: string) {
