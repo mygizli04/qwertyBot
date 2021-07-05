@@ -1,4 +1,4 @@
-import fs = require('fs')
+import fs from 'fs'
 
 if (!fs.existsSync('./config.json')) {
     fs.writeFileSync('./config.json', JSON.stringify({
@@ -30,11 +30,59 @@ import minehut = require('./minehut.js')
 const client = new discord.Client()
 let ready = false
 
+function millisecondsUntilHour(hour: number): number {
+    let halfPoint = new Date()
+    let currentHour = halfPoint.getHours()
+    halfPoint.setHours(hour, 0, 0, 0)
+    if (currentHour > hour) {
+        // Add a day if the time's passed
+        halfPoint.setTime(halfPoint.getTime() + 86400000)
+    }
+    return halfPoint.getTime() - new Date().getTime()
+}
+
+let credits: number
+let reminders: {
+    midway: NodeJS.Timeout,
+    final: NodeJS.Timeout
+}
+
+function setReminders() {
+    if (reminders) {
+        clearTimeout(reminders.midway)
+        clearTimeout(reminders.final)
+    }
+
+    reminders = {
+        midway: setTimeout(() => {
+            minehut.getUserInfo(minehut.loginInfo.userId).then(async justey => {
+                if (credits === justey.credits) {
+                    (<discord.TextChannel> client.channels.cache.get("723663491428253756")).send("Hey, has anyone voted yet? Justey still only has " + justey.credits + " credits.")
+                }
+                setReminders()
+            })
+        }, millisecondsUntilHour(12)),
+
+        final: setTimeout(() => {
+            minehut.getUserInfo(minehut.loginInfo.userId).then(async justey => {
+                if (credits === justey.credits) {
+                    (<discord.TextChannel> client.channels.cache.get("723663491428253756")).send("Hey, has anyone voted yet? Justey still only has " + justey.credits + " credits.")
+                }
+                setReminders()
+            })
+        }, millisecondsUntilHour(23))
+    }
+}
+
 client.on('ready', () => {
     console.log("Bot's ready!")
     minehut.login().then(() => {
         console.log("Logged into minehut!")
         ready = true
+        minehut.getUserInfo(minehut.loginInfo.userId).then(justey => {
+            credits = justey.credits
+        })
+        setReminders()
     }).catch(err => {
         console.error("Error logging into minehut: " + err)
     })
