@@ -48,6 +48,10 @@ let reminders: {
 }
 
 function setReminders() {
+    /*
+    
+    Spam alert!
+
     if (reminders) {
         clearTimeout(reminders.midway)
         clearTimeout(reminders.final)
@@ -71,7 +75,7 @@ function setReminders() {
                 setReminders()
             })
         }, millisecondsUntilHour(23))
-    }
+    }*/
 }
 
 client.on('ready', () => {
